@@ -1,6 +1,6 @@
-package uz.heeypay.ecom.filestore;
+package uz.khakimjanovich.platform.filestore;
 
-import uz.heeypay.ecom.error.StatusThrowable;
+import uz.khakimjanovich.platform.error.StatusThrowable;
 
 public enum FileStoreExceptionStatus implements StatusThrowable {
   FILE_STORE_BUCKET_UNKNOWN,

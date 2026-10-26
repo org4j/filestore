@@ -1,4 +1,4 @@
-package uz.heeypay.ecom.filestore;
+package uz.khakimjanovich.platform.filestore;
 
 import java.net.URI;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
