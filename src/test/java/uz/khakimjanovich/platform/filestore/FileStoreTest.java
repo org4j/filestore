@@ -1,4 +1,4 @@
-package uz.heeypay.ecom.filestore;
+package uz.khakimjanovich.platform.filestore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,7 +23,7 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
-import uz.heeypay.ecom.error.GeneralException;
+import uz.khakimjanovich.platform.error.GeneralException;
 
 /** The store's own rules, with the S3 client mocked. */
 @ExtendWith(OutputCaptureExtension.class)
@@ -52,12 +52,12 @@ class FileStoreTest {
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withBean(S3Client.class, () -> s3)
         .withPropertyValues(
-            "ecom.file-store.storage.endpoint=http://localhost:8333",
-            "ecom.file-store.storage.region=us-east-1",
-            "ecom.file-store.storage.access-key=ecom",
-            "ecom.file-store.storage.secret-key=local-only",
-            "ecom.file-store.buckets.partner-documents.allowed-types=application/pdf",
-            "ecom.file-store.buckets.partner-documents.max-size=10MB")
+            "platform.file-store.storage.endpoint=http://localhost:8333",
+            "platform.file-store.storage.region=us-east-1",
+            "platform.file-store.storage.access-key=demo",
+            "platform.file-store.storage.secret-key=local-only",
+            "platform.file-store.buckets.partner-documents.allowed-types=application/pdf",
+            "platform.file-store.buckets.partner-documents.max-size=10MB")
         .run(
             context ->
                 assertThat(context)
@@ -79,12 +79,12 @@ class FileStoreTest {
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withBean(S3Client.class, () -> s3)
         .withPropertyValues(
-            "ecom.file-store.storage.endpoint=http://localhost:8333",
-            "ecom.file-store.storage.region=us-east-1",
-            "ecom.file-store.storage.access-key=ecom",
-            "ecom.file-store.storage.secret-key=local-only",
-            "ecom.file-store.buckets.partner-documents.allowed-types=application/pdf",
-            "ecom.file-store.buckets.partner-documents.max-size=10MB")
+            "platform.file-store.storage.endpoint=http://localhost:8333",
+            "platform.file-store.storage.region=us-east-1",
+            "platform.file-store.storage.access-key=demo",
+            "platform.file-store.storage.secret-key=local-only",
+            "platform.file-store.buckets.partner-documents.allowed-types=application/pdf",
+            "platform.file-store.buckets.partner-documents.max-size=10MB")
         .run(
             context ->
                 assertThat(context)

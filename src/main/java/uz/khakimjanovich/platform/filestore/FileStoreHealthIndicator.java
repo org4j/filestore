@@ -1,4 +1,4 @@
-package uz.heeypay.ecom.filestore;
+package uz.khakimjanovich.platform.filestore;
 
 import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;

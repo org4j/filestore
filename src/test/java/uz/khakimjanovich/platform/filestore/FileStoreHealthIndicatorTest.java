@@ -1,4 +1,4 @@
-package uz.heeypay.ecom.filestore;
+package uz.khakimjanovich.platform.filestore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

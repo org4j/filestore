@@ -1,4 +1,4 @@
-package uz.heeypay.ecom.filestore;
+package uz.khakimjanovich.platform.filestore;
 
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -18,8 +18,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import uz.heeypay.ecom.error.GeneralException;
-import uz.heeypay.ecom.filestore.FileStoreProperties.Bucket;
+import uz.khakimjanovich.platform.error.GeneralException;
+import uz.khakimjanovich.platform.filestore.FileStoreProperties.Bucket;
 
 /**
  * Files as S3 objects: the key is a random id, and what the file is (name, type, checksum, upload
