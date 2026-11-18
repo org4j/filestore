@@ -1,4 +1,4 @@
-# file-store
+# filestore4j
 
 Files for any module, in buckets of an S3-compatible store (SeaweedFS locally, any S3 elsewhere).
 A module keeps only a file's id; what the file is (name, type, checksum, upload time) travels with
