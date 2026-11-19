@@ -32,8 +32,7 @@ class FileStorePropertiesTest {
   void aBucketThatTakesNothingStopsStartup() {
     runner
         .withPropertyValues(
-            "filestore4j.storage.secret-key=local-only",
-            "filestore4j.buckets.logos.max-size=0B")
+            "filestore4j.storage.secret-key=local-only", "filestore4j.buckets.logos.max-size=0B")
         .run(
             context ->
                 assertThat(context)
