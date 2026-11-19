@@ -1,8 +1,9 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.org4j.error.GeneralException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,19 +32,18 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import uz.khakimjanovich.error4j.GeneralException;
 
 @SpringBootTest(
     classes = FileStoreIT.class,
     properties = {
-      "filestore4j.storage.region=us-east-1",
-      "filestore4j.storage.access-key=demo",
-      "filestore4j.storage.secret-key=local-only",
-      "filestore4j.storage.path-style=true",
-      "filestore4j.buckets.partner-documents.allowed-types=application/pdf,image/png,image/jpeg",
-      "filestore4j.buckets.partner-documents.max-size=10MB",
-      "filestore4j.buckets.sales-point-logos.allowed-types=image/png,image/jpeg",
-      "filestore4j.buckets.sales-point-logos.max-size=1MB"
+      "org4j.filestore.storage.region=us-east-1",
+      "org4j.filestore.storage.access-key=demo",
+      "org4j.filestore.storage.secret-key=local-only",
+      "org4j.filestore.storage.path-style=true",
+      "org4j.filestore.buckets.partner-documents.allowed-types=application/pdf,image/png,image/jpeg",
+      "org4j.filestore.buckets.partner-documents.max-size=10MB",
+      "org4j.filestore.buckets.sales-point-logos.allowed-types=image/png,image/jpeg",
+      "org4j.filestore.buckets.sales-point-logos.max-size=1MB"
     })
 @ImportAutoConfiguration(FileStoreAutoConfiguration.class)
 @Testcontainers
@@ -80,7 +80,7 @@ class FileStoreIT {
 
   @DynamicPropertySource
   static void storage(DynamicPropertyRegistry registry) {
-    registry.add("filestore4j.storage.endpoint", FileStoreIT::endpoint);
+    registry.add("org4j.filestore.storage.endpoint", FileStoreIT::endpoint);
   }
 
   private static String endpoint() {
@@ -153,13 +153,13 @@ class FileStoreIT {
     new ApplicationContextRunner()
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withPropertyValues(
-            "filestore4j.storage.endpoint=" + endpoint(),
-            "filestore4j.storage.region=us-east-1",
-            "filestore4j.storage.access-key=demo",
-            "filestore4j.storage.secret-key=local-only",
-            "filestore4j.storage.path-style=true",
-            "filestore4j.buckets.contracts.allowed-types=application/pdf",
-            "filestore4j.buckets.contracts.max-size=1MB")
+            "org4j.filestore.storage.endpoint=" + endpoint(),
+            "org4j.filestore.storage.region=us-east-1",
+            "org4j.filestore.storage.access-key=demo",
+            "org4j.filestore.storage.secret-key=local-only",
+            "org4j.filestore.storage.path-style=true",
+            "org4j.filestore.buckets.contracts.allowed-types=application/pdf",
+            "org4j.filestore.buckets.contracts.max-size=1MB")
         .run(
             context ->
                 assertThat(context.getStartupFailure())

@@ -1,4 +1,4 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -15,16 +15,16 @@ class FileStorePropertiesTest {
           .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
           .withBean(S3Client.class, () -> mock(S3Client.class)) // no store needed to check rules
           .withPropertyValues(
-              "filestore4j.storage.endpoint=http://localhost:8333",
-              "filestore4j.storage.region=us-east-1",
-              "filestore4j.storage.access-key=demo",
-              "filestore4j.buckets.logos.allowed-types=image/png",
-              "filestore4j.buckets.logos.max-size=1MB");
+              "org4j.filestore.storage.endpoint=http://localhost:8333",
+              "org4j.filestore.storage.region=us-east-1",
+              "org4j.filestore.storage.access-key=demo",
+              "org4j.filestore.buckets.logos.allowed-types=image/png",
+              "org4j.filestore.buckets.logos.max-size=1MB");
 
   @Test
   void aBucketWithAPositiveLimitStarts() {
     runner
-        .withPropertyValues("filestore4j.storage.secret-key=local-only")
+        .withPropertyValues("org4j.filestore.storage.secret-key=local-only")
         .run(context -> assertThat(context).hasSingleBean(FileStore.class));
   }
 
@@ -32,13 +32,14 @@ class FileStorePropertiesTest {
   void aBucketThatTakesNothingStopsStartup() {
     runner
         .withPropertyValues(
-            "filestore4j.storage.secret-key=local-only", "filestore4j.buckets.logos.max-size=0B")
+            "org4j.filestore.storage.secret-key=local-only",
+            "org4j.filestore.buckets.logos.max-size=0B")
         .run(
             context ->
                 assertThat(context)
                     .getFailure()
                     .rootCause()
-                    .hasMessageContaining("filestore4j")
+                    .hasMessageContaining("org4j.filestore")
                     .hasMessageContaining("max-size"));
   }
 
@@ -49,14 +50,14 @@ class FileStorePropertiesTest {
             assertThat(context)
                 .getFailure()
                 .rootCause()
-                .hasMessageContaining("filestore4j")
+                .hasMessageContaining("org4j.filestore")
                 .hasMessageContaining("secret-key"));
   }
 
   @Test
   void theDefaultChainIsChosenOnPurpose() {
     runner
-        .withPropertyValues("filestore4j.storage.credentials=default-chain")
+        .withPropertyValues("org4j.filestore.storage.credentials=default-chain")
         .run(context -> assertThat(context).hasSingleBean(FileStore.class));
   }
 
@@ -66,17 +67,17 @@ class FileStorePropertiesTest {
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withBean(S3Client.class, () -> mock(S3Client.class))
         .withPropertyValues(
-            "filestore4j.storage.endpoint=http://localhost:8333",
-            "filestore4j.storage.access-key=demo",
-            "filestore4j.storage.secret-key=local-only",
-            "filestore4j.buckets.logos.allowed-types=image/png",
-            "filestore4j.buckets.logos.max-size=1MB")
+            "org4j.filestore.storage.endpoint=http://localhost:8333",
+            "org4j.filestore.storage.access-key=demo",
+            "org4j.filestore.storage.secret-key=local-only",
+            "org4j.filestore.buckets.logos.allowed-types=image/png",
+            "org4j.filestore.buckets.logos.max-size=1MB")
         .run(
             context ->
                 assertThat(context)
                     .getFailure()
                     .rootCause()
-                    .hasMessageContaining("filestore4j")
+                    .hasMessageContaining("org4j.filestore")
                     .hasMessageContaining("region"));
   }
 }

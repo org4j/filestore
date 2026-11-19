@@ -1,4 +1,4 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.github.org4j.error.GeneralException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,7 +27,6 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
-import uz.khakimjanovich.error4j.GeneralException;
 
 @ExtendWith(OutputCaptureExtension.class)
 class FileStoreTest {
@@ -54,12 +54,12 @@ class FileStoreTest {
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withBean(S3Client.class, () -> s3)
         .withPropertyValues(
-            "filestore4j.storage.endpoint=http://localhost:8333",
-            "filestore4j.storage.region=us-east-1",
-            "filestore4j.storage.access-key=demo",
-            "filestore4j.storage.secret-key=local-only",
-            "filestore4j.buckets.partner-documents.allowed-types=application/pdf",
-            "filestore4j.buckets.partner-documents.max-size=10MB")
+            "org4j.filestore.storage.endpoint=http://localhost:8333",
+            "org4j.filestore.storage.region=us-east-1",
+            "org4j.filestore.storage.access-key=demo",
+            "org4j.filestore.storage.secret-key=local-only",
+            "org4j.filestore.buckets.partner-documents.allowed-types=application/pdf",
+            "org4j.filestore.buckets.partner-documents.max-size=10MB")
         .run(
             context ->
                 assertThat(context)
@@ -81,12 +81,12 @@ class FileStoreTest {
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withBean(S3Client.class, () -> s3)
         .withPropertyValues(
-            "filestore4j.storage.endpoint=http://localhost:8333",
-            "filestore4j.storage.region=us-east-1",
-            "filestore4j.storage.access-key=demo",
-            "filestore4j.storage.secret-key=local-only",
-            "filestore4j.buckets.partner-documents.allowed-types=application/pdf",
-            "filestore4j.buckets.partner-documents.max-size=10MB")
+            "org4j.filestore.storage.endpoint=http://localhost:8333",
+            "org4j.filestore.storage.region=us-east-1",
+            "org4j.filestore.storage.access-key=demo",
+            "org4j.filestore.storage.secret-key=local-only",
+            "org4j.filestore.buckets.partner-documents.allowed-types=application/pdf",
+            "org4j.filestore.buckets.partner-documents.max-size=10MB")
         .run(
             context ->
                 assertThat(context)

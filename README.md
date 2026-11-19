@@ -1,4 +1,4 @@
-# filestore4j
+# filestore
 
 Files for any module, in buckets of an S3-compatible store (SeaweedFS locally, any S3 elsewhere).
 A module keeps only a file's id; what the file is (name, type, checksum, upload time) travels with
@@ -7,7 +7,7 @@ and a file read back must still match its checksum. The buckets are infrastructu
 checks at startup that each one exists.
 
 ```groovy
-implementation libs.filestore4j
+implementation libs.filestore
 ```
 
 ```java
@@ -30,15 +30,15 @@ files.delete("partner-documents", stored.id());
 
 | Property | Default | What |
 |---|---|---|
-| `filestore4j.storage.endpoint` | — | the store's URL; setting it turns the library on |
-| `filestore4j.storage.region` | — | the region requests are signed for |
-| `filestore4j.storage.credentials` | `keys` | `keys`: the access and secret key, both required; `default-chain`: AWS's default credentials chain (an instance or container role), only when chosen |
-| `filestore4j.storage.access-key` | — | the app's access key |
-| `filestore4j.storage.secret-key` | — | its secret key, from Vault |
-| `filestore4j.storage.path-style` | false | the bucket in the path, as SeaweedFS and MinIO want |
-| `filestore4j.storage.api-call-timeout` | 30s | one call, retries included |
-| `filestore4j.storage.api-call-attempt-timeout` | 10s | one attempt of a call |
-| `filestore4j.buckets` | — | the buckets the app may use: `<name>.allowed-types` and `<name>.max-size` |
+| `org4j.filestore.storage.endpoint` | — | the store's URL; setting it turns the library on |
+| `org4j.filestore.storage.region` | — | the region requests are signed for |
+| `org4j.filestore.storage.credentials` | `keys` | `keys`: the access and secret key, both required; `default-chain`: AWS's default credentials chain (an instance or container role), only when chosen |
+| `org4j.filestore.storage.access-key` | — | the app's access key |
+| `org4j.filestore.storage.secret-key` | — | its secret key, from Vault |
+| `org4j.filestore.storage.path-style` | false | the bucket in the path, as SeaweedFS and MinIO want |
+| `org4j.filestore.storage.api-call-timeout` | 30s | one call, retries included |
+| `org4j.filestore.storage.api-call-attempt-timeout` | 10s | one attempt of a call |
+| `org4j.filestore.buckets` | — | the buckets the app may use: `<name>.allowed-types` and `<name>.max-size` |
 
 ## Errors
 
@@ -65,8 +65,8 @@ who may see them (`management.endpoint.health.show-details`).
 
 ## Tests
 
-- `./gradlew -p platform :file-store:test`: types from bytes, the rules, a missing bucket, a corrupt
+- `./gradlew test`: types from bytes, the rules, a missing bucket, a corrupt
   file, the store down.
-- `./gradlew -p platform :file-store:integrationTest`: a real SeaweedFS as an identity that may only
+- `./gradlew integrationTest`: a real SeaweedFS as an identity that may only
   read and write its buckets (nothing lists them): store, read, delete, rules, a missing bucket, a file changed
   behind the store's back.
