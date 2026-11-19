@@ -1,4 +1,4 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;

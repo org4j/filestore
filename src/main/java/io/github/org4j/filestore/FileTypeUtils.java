@@ -1,10 +1,10 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
-import static uz.khakimjanovich.filestore4j.FileStoreConstants.JPEG_SIGNATURE;
-import static uz.khakimjanovich.filestore4j.FileStoreConstants.PDF_END;
-import static uz.khakimjanovich.filestore4j.FileStoreConstants.PDF_SIGNATURE;
-import static uz.khakimjanovich.filestore4j.FileStoreConstants.PNG_SIGNATURE;
-import static uz.khakimjanovich.filestore4j.FileStoreConstants.ZIP_END;
+import static io.github.org4j.filestore.FileStoreConstants.JPEG_SIGNATURE;
+import static io.github.org4j.filestore.FileStoreConstants.PDF_END;
+import static io.github.org4j.filestore.FileStoreConstants.PDF_SIGNATURE;
+import static io.github.org4j.filestore.FileStoreConstants.PNG_SIGNATURE;
+import static io.github.org4j.filestore.FileStoreConstants.ZIP_END;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
 import java.net.URI;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

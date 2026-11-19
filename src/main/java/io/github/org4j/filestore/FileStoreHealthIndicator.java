@@ -1,4 +1,4 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
 import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;

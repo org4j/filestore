@@ -1,6 +1,6 @@
-package uz.khakimjanovich.filestore4j;
+package io.github.org4j.filestore;
 
-import uz.khakimjanovich.error4j.StatusThrowable;
+import io.github.org4j.error.StatusThrowable;
 
 public enum FileStoreExceptionStatus implements StatusThrowable {
   FILE_STORE_BUCKET_UNKNOWN,
