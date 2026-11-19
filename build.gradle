@@ -1,8 +1,8 @@
 // Files for any module, in buckets of an S3-compatible store (SeaweedFS locally, any S3 elsewhere).
 // A module keeps only the file's id; what the file is travels with the object as its metadata.
 plugins {
-    alias(libs.plugins.platform.library)
-    alias(libs.plugins.platform.integration.test)
+    alias(libs.plugins.conventions.library)
+    alias(libs.plugins.conventions.integration.test)
 }
 
 dependencies {
