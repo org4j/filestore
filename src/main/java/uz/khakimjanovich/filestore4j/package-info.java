@@ -1,4 +1,4 @@
 @NullMarked
-package uz.khakimjanovich.platform.filestore;
+package uz.khakimjanovich.filestore4j;
 
 import org.jspecify.annotations.NullMarked;

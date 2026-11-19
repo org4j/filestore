@@ -1,4 +1,4 @@
-package uz.khakimjanovich.platform.filestore;
+package uz.khakimjanovich.filestore4j;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,7 +26,7 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
-import uz.khakimjanovich.platform.error.GeneralException;
+import uz.khakimjanovich.error4j.GeneralException;
 
 @ExtendWith(OutputCaptureExtension.class)
 class FileStoreTest {
@@ -54,12 +54,12 @@ class FileStoreTest {
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withBean(S3Client.class, () -> s3)
         .withPropertyValues(
-            "platform.file-store.storage.endpoint=http://localhost:8333",
-            "platform.file-store.storage.region=us-east-1",
-            "platform.file-store.storage.access-key=demo",
-            "platform.file-store.storage.secret-key=local-only",
-            "platform.file-store.buckets.partner-documents.allowed-types=application/pdf",
-            "platform.file-store.buckets.partner-documents.max-size=10MB")
+            "filestore4j.storage.endpoint=http://localhost:8333",
+            "filestore4j.storage.region=us-east-1",
+            "filestore4j.storage.access-key=demo",
+            "filestore4j.storage.secret-key=local-only",
+            "filestore4j.buckets.partner-documents.allowed-types=application/pdf",
+            "filestore4j.buckets.partner-documents.max-size=10MB")
         .run(
             context ->
                 assertThat(context)
@@ -81,12 +81,12 @@ class FileStoreTest {
         .withConfiguration(AutoConfigurations.of(FileStoreAutoConfiguration.class))
         .withBean(S3Client.class, () -> s3)
         .withPropertyValues(
-            "platform.file-store.storage.endpoint=http://localhost:8333",
-            "platform.file-store.storage.region=us-east-1",
-            "platform.file-store.storage.access-key=demo",
-            "platform.file-store.storage.secret-key=local-only",
-            "platform.file-store.buckets.partner-documents.allowed-types=application/pdf",
-            "platform.file-store.buckets.partner-documents.max-size=10MB")
+            "filestore4j.storage.endpoint=http://localhost:8333",
+            "filestore4j.storage.region=us-east-1",
+            "filestore4j.storage.access-key=demo",
+            "filestore4j.storage.secret-key=local-only",
+            "filestore4j.buckets.partner-documents.allowed-types=application/pdf",
+            "filestore4j.buckets.partner-documents.max-size=10MB")
         .run(
             context ->
                 assertThat(context)

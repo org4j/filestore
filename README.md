@@ -7,7 +7,7 @@ and a file read back must still match its checksum. The buckets are infrastructu
 checks at startup that each one exists.
 
 ```groovy
-implementation libs.platform.file.store
+implementation libs.filestore4j
 ```
 
 ```java
@@ -30,15 +30,15 @@ files.delete("partner-documents", stored.id());
 
 | Property | Default | What |
 |---|---|---|
-| `platform.file-store.storage.endpoint` | — | the store's URL; setting it turns the library on |
-| `platform.file-store.storage.region` | — | the region requests are signed for |
-| `platform.file-store.storage.credentials` | `keys` | `keys`: the access and secret key, both required; `default-chain`: AWS's default credentials chain (an instance or container role), only when chosen |
-| `platform.file-store.storage.access-key` | — | the app's access key |
-| `platform.file-store.storage.secret-key` | — | its secret key, from Vault |
-| `platform.file-store.storage.path-style` | false | the bucket in the path, as SeaweedFS and MinIO want |
-| `platform.file-store.storage.api-call-timeout` | 30s | one call, retries included |
-| `platform.file-store.storage.api-call-attempt-timeout` | 10s | one attempt of a call |
-| `platform.file-store.buckets` | — | the buckets the app may use: `<name>.allowed-types` and `<name>.max-size` |
+| `filestore4j.storage.endpoint` | — | the store's URL; setting it turns the library on |
+| `filestore4j.storage.region` | — | the region requests are signed for |
+| `filestore4j.storage.credentials` | `keys` | `keys`: the access and secret key, both required; `default-chain`: AWS's default credentials chain (an instance or container role), only when chosen |
+| `filestore4j.storage.access-key` | — | the app's access key |
+| `filestore4j.storage.secret-key` | — | its secret key, from Vault |
+| `filestore4j.storage.path-style` | false | the bucket in the path, as SeaweedFS and MinIO want |
+| `filestore4j.storage.api-call-timeout` | 30s | one call, retries included |
+| `filestore4j.storage.api-call-attempt-timeout` | 10s | one attempt of a call |
+| `filestore4j.buckets` | — | the buckets the app may use: `<name>.allowed-types` and `<name>.max-size` |
 
 ## Errors
 

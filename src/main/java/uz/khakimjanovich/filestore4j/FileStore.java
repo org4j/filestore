@@ -1,4 +1,4 @@
-package uz.khakimjanovich.platform.filestore;
+package uz.khakimjanovich.filestore4j;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -21,8 +21,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import uz.khakimjanovich.platform.error.GeneralException;
-import uz.khakimjanovich.platform.filestore.FileStoreProperties.Bucket;
+import uz.khakimjanovich.error4j.GeneralException;
+import uz.khakimjanovich.filestore4j.FileStoreProperties.Bucket;
 
 @Slf4j
 @RequiredArgsConstructor
