@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -18,6 +19,11 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 
+/**
+ * {@link FileStore} and its {@link S3Client} once {@code org4j.filestore.storage.endpoint} is set,
+ * and with the actuator the buckets' health indicator, {@code fileStore}. Startup fails if a
+ * configured bucket is missing from the store.
+ */
 @AutoConfiguration
 @ConditionalOnProperty(prefix = FileStoreConstants.PROPERTIES_PREFIX, name = "storage.endpoint")
 @EnableConfigurationProperties(FileStoreProperties.class)
@@ -56,18 +62,24 @@ public class FileStoreAutoConfiguration {
     return store;
   }
 
-  @Bean
-  @ConditionalOnClass(HealthIndicator.class)
-  @ConditionalOnMissingBean(name = FileStoreConstants.HEALTH_INDICATOR_BEAN)
-  HealthIndicator fileStoreHealthIndicator(S3Client s3, FileStoreProperties properties) {
-    return new FileStoreHealthIndicator(s3, properties);
-  }
-
   private static AwsCredentialsProvider credentials(FileStoreProperties.Storage storage) {
     if (storage.credentials() == FileStoreProperties.Storage.Credentials.DEFAULT_CHAIN) {
       return DefaultCredentialsProvider.builder().build();
     }
     return StaticCredentialsProvider.create(
         AwsBasicCredentials.create(storage.accessKey(), storage.secretKey()));
+  }
+
+  // A class of its own: a method returning HealthIndicator here would fail to load without the
+  // actuator.
+  @Configuration(proxyBeanMethods = false)
+  @ConditionalOnClass(HealthIndicator.class)
+  static class Health {
+
+    @Bean
+    @ConditionalOnMissingBean(name = FileStoreConstants.HEALTH_INDICATOR_BEAN)
+    HealthIndicator fileStoreHealthIndicator(S3Client s3, FileStoreProperties properties) {
+      return new FileStoreHealthIndicator(s3, properties);
+    }
   }
 }
