@@ -6,31 +6,56 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Supplier;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-@Slf4j
-@RequiredArgsConstructor
+/**
+ * Files in the configured buckets of an S3-compatible store. A file is kept under a random id; its
+ * name, type, checksum and upload time travel with it as the object's metadata.
+ *
+ * <p>Every failure is a {@link GeneralException} with a {@link FileStoreExceptionStatus}.
+ */
 public class FileStore {
+
+  private static final Logger log = LoggerFactory.getLogger(FileStore.class);
 
   private final S3Client s3;
   private final FileStoreProperties properties;
 
+  public FileStore(S3Client s3, FileStoreProperties properties) {
+    this.s3 = s3;
+    this.properties = properties;
+  }
+
+  /**
+   * What the store knows of a file.
+   *
+   * @param id the id the store gave it; the only thing a module keeps
+   * @param fileName the uploaded name, its directories dropped and its unsafe characters replaced
+   * @param contentType read from the file's bytes, never from the upload's claim
+   * @param sha256 hex, checked again whenever the file is read
+   */
   public record StoredFile(
       UUID id,
       String bucket,
@@ -40,7 +65,9 @@ public class FileStore {
       String sha256,
       Instant uploadedAt) {}
 
+  /** A file read whole, its checksum checked. */
   public static final class FileContent {
+
     private final StoredFile file;
     private final byte[] bytes;
 
@@ -58,6 +85,10 @@ public class FileStore {
     }
   }
 
+  /**
+   * A file being read. Reading its stream to the end checks the checksum: the last read throws
+   * {@code FILE_STORE_FILE_CORRUPT} if the bytes changed.
+   */
   public record StreamingFileContent(StoredFile file, InputStream stream) implements AutoCloseable {
 
     public void transferTo(OutputStream target) throws IOException {
@@ -70,35 +101,41 @@ public class FileStore {
     }
   }
 
-  public void checkBuckets() {
+  void checkBuckets() {
     for (var name : properties.buckets().keySet()) {
       try {
         s3.headBucket(head -> head.bucket(name));
       } catch (NoSuchBucketException e) {
         throw new IllegalStateException(FileStoreConstants.BUCKET_MISSING.formatted(name), e);
       } catch (S3Exception e) {
-        if (e.statusCode() == 404) {
-          throw new IllegalStateException(FileStoreConstants.BUCKET_MISSING.formatted(name), e);
-        }
-        throw new IllegalStateException(FileStoreConstants.BUCKET_UNREADABLE.formatted(name), e);
+        var message =
+            e.statusCode() == 404
+                ? FileStoreConstants.BUCKET_MISSING
+                : FileStoreConstants.BUCKET_UNREADABLE;
+        throw new IllegalStateException(message.formatted(name), e);
       } catch (SdkException e) {
-        // The store doesn't answer (refused, a timeout): say which bucket and why, not a raw SDK
-        // trace.
         throw new IllegalStateException(FileStoreConstants.BUCKET_UNCHECKED.formatted(name), e);
       }
     }
   }
 
+  /**
+   * Stores an upload if its bytes are one of the bucket's types and it isn't too large.
+   *
+   * @param bucket a configured bucket's name
+   */
   public StoredFile store(String bucket, MultipartFile file) {
     var rules = bucket(bucket);
-    if (file.isEmpty()) throw new GeneralException(FileStoreExceptionStatus.FILE_STORE_FILE_EMPTY);
+    if (file.isEmpty()) {
+      throw new GeneralException(FileStoreExceptionStatus.FILE_STORE_FILE_EMPTY);
+    }
     if (file.getSize() > rules.maxSize().toBytes()) {
       throw new GeneralException(
           FileStoreExceptionStatus.FILE_STORE_FILE_TOO_LARGE, rules.maxSize());
     }
     var bytes = bytes(file);
     var type =
-        FileTypeUtils.detect(bytes)
+        FileTypes.detect(bytes)
             .filter(rules.allowedTypes()::contains)
             .orElseThrow(
                 () ->
@@ -109,11 +146,19 @@ public class FileStore {
         new StoredFile(
             UUID.randomUUID(),
             bucket,
-            FileTypeUtils.safeName(file.getOriginalFilename()),
+            FileTypes.safeName(file.getOriginalFilename()),
             type,
             bytes.length,
             sha256(bytes),
             Instant.now());
+    var metadata =
+        Map.of(
+            // Metadata travels as HTTP headers, which must be ASCII: S3 refuses the signature
+            // otherwise.
+            FileStoreConstants.FILE_NAME_METADATA,
+                URLEncoder.encode(stored.fileName(), StandardCharsets.UTF_8),
+            FileStoreConstants.SHA256_METADATA, stored.sha256(),
+            FileStoreConstants.UPLOADED_AT_METADATA, stored.uploadedAt().toString());
     storage(
         () ->
             s3.putObject(
@@ -121,54 +166,35 @@ public class FileStore {
                     put.bucket(bucket)
                         .key(stored.id().toString())
                         .contentType(type)
-                        .metadata(
-                            Map.of(
-                                FileStoreConstants.FILE_NAME_METADATA, stored.fileName(),
-                                FileStoreConstants.SHA256_METADATA, stored.sha256(),
-                                FileStoreConstants.UPLOADED_AT_METADATA,
-                                    stored.uploadedAt().toString())),
+                        .metadata(metadata),
                 RequestBody.fromBytes(bytes)));
     log.info(FileStoreConstants.LOG_STORED, stored.id(), bucket, bytes.length, type);
     return stored;
   }
 
+  /**
+   * Opens a file without reading it into memory; the caller closes it.
+   *
+   * @throws GeneralException {@code FILE_STORE_FILE_NOT_FOUND}, or {@code FILE_STORE_FILE_CORRUPT}
+   *     if the object lacks the store's metadata
+   */
   public StreamingFileContent openStream(String bucket, UUID fileId) {
     bucket(bucket);
-    var stream =
-        storage(() -> s3.getObject(get -> get.bucket(bucket).key(fileId.toString())), fileId);
-    var response = stream.response();
-    var metadata = response.metadata();
-    var name = metadata.get(FileStoreConstants.FILE_NAME_METADATA);
-    var checksum = metadata.get(FileStoreConstants.SHA256_METADATA);
-    var uploadedAt = metadata.get(FileStoreConstants.UPLOADED_AT_METADATA);
-    if (name == null || uploadedAt == null || checksum == null) {
-      try {
-        stream.close();
-      } catch (IOException e) {
-        log.debug("Stream close failed for corrupt file {} in {}", fileId, bucket, e);
-      }
-      log.error(FileStoreConstants.LOG_CORRUPT, fileId, bucket);
-      throw new GeneralException(FileStoreExceptionStatus.FILE_STORE_FILE_CORRUPT, fileId);
-    }
-    var storedFile =
-        new StoredFile(
-            fileId,
-            bucket,
-            name,
-            response.contentType(),
-            response.contentLength(),
-            checksum,
-            Instant.parse(uploadedAt));
+    var object =
+        found(() -> s3.getObject(get -> get.bucket(bucket).key(fileId.toString())), fileId);
+    var stored = described(object, bucket, fileId);
     return new StreamingFileContent(
-        storedFile, new VerifyingInputStream(stream, checksum, fileId, bucket));
+        stored, new VerifyingInputStream(object, stored.sha256(), fileId, bucket));
   }
 
+  /** Copies a file to {@code target} without reading it into memory, its checksum checked. */
   public void transferTo(String bucket, UUID fileId, OutputStream target) throws IOException {
     try (var streaming = openStream(bucket, fileId)) {
       streaming.transferTo(target);
     }
   }
 
+  /** Reads a file whole; for small files, {@link #openStream} for large ones. */
   public FileContent read(String bucket, UUID fileId) {
     try (var streaming = openStream(bucket, fileId)) {
       return new FileContent(streaming.file(), streaming.stream().readAllBytes());
@@ -178,12 +204,16 @@ public class FileStore {
     }
   }
 
+  /**
+   * Deletes a file; a file already gone counts as deleted. A store that doesn't answer is logged,
+   * not thrown: the caller's own deletion goes on, and the file stays behind.
+   */
   public void delete(String bucket, UUID fileId) {
     bucket(bucket);
     try {
-      s3.deleteObject(d -> d.bucket(bucket).key(fileId.toString()));
+      s3.deleteObject(delete -> delete.bucket(bucket).key(fileId.toString()));
     } catch (SdkException e) {
-      log.warn("File {} in {} was not deleted: {}", fileId, bucket, e.getMessage());
+      log.warn(FileStoreConstants.LOG_NOT_DELETED, fileId, bucket, e.getMessage());
     }
   }
 
@@ -195,6 +225,40 @@ public class FileStore {
     return bucket;
   }
 
+  private static StoredFile described(
+      ResponseInputStream<GetObjectResponse> object, String bucket, UUID fileId) {
+    var response = object.response();
+    var metadata = response.metadata();
+    var name = metadata.get(FileStoreConstants.FILE_NAME_METADATA);
+    var checksum = metadata.get(FileStoreConstants.SHA256_METADATA);
+    var uploadedAt = metadata.get(FileStoreConstants.UPLOADED_AT_METADATA);
+    if (name == null || checksum == null || uploadedAt == null) {
+      throw corrupt(object, bucket, fileId);
+    }
+    try {
+      return new StoredFile(
+          fileId,
+          bucket,
+          URLDecoder.decode(name, StandardCharsets.UTF_8),
+          response.contentType(),
+          response.contentLength(),
+          checksum,
+          Instant.parse(uploadedAt));
+    } catch (DateTimeException | IllegalArgumentException e) {
+      throw corrupt(object, bucket, fileId);
+    }
+  }
+
+  private static GeneralException corrupt(InputStream object, String bucket, UUID fileId) {
+    try {
+      object.close();
+    } catch (IOException e) {
+      log.debug(FileStoreConstants.LOG_NOT_CLOSED, fileId, bucket, e);
+    }
+    log.error(FileStoreConstants.LOG_CORRUPT, fileId, bucket);
+    return new GeneralException(FileStoreExceptionStatus.FILE_STORE_FILE_CORRUPT, fileId);
+  }
+
   private static <T> T storage(Supplier<T> call) {
     try {
       return call.get();
@@ -203,7 +267,7 @@ public class FileStore {
     }
   }
 
-  private static <T> T storage(Supplier<T> call, UUID fileId) {
+  private static <T> T found(Supplier<T> call, UUID fileId) {
     try {
       return call.get();
     } catch (NoSuchKeyException e) {
@@ -232,77 +296,62 @@ public class FileStore {
   }
 
   private static String sha256(byte[] bytes) {
+    return HexFormat.of().formatHex(sha256().digest(bytes));
+  }
+
+  private static MessageDigest sha256() {
     try {
-      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+      return MessageDigest.getInstance("SHA-256");
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException(e);
     }
   }
 
   private static final class VerifyingInputStream extends FilterInputStream {
-    private final MessageDigest digest;
-    private final String expectedChecksum;
+
+    private final MessageDigest digest = sha256();
+    private final String expected;
     private final UUID fileId;
     private final String bucket;
     private boolean verified;
-    private boolean eof;
 
-    private VerifyingInputStream(
-        InputStream in, String expectedChecksum, UUID fileId, String bucket) {
+    private VerifyingInputStream(InputStream in, String expected, UUID fileId, String bucket) {
       super(in);
-      this.expectedChecksum = expectedChecksum;
+      this.expected = expected;
       this.fileId = fileId;
       this.bucket = bucket;
-      try {
-        this.digest = MessageDigest.getInstance("SHA-256");
-      } catch (NoSuchAlgorithmException e) {
-        throw new IllegalStateException(e);
-      }
     }
 
     @Override
     public int read() throws IOException {
-      int b = super.read();
-      if (b != -1) {
-        digest.update((byte) b);
+      var b = super.read();
+      if (b == -1) {
+        verify();
       } else {
-        eof = true;
-        verifyChecksum();
+        digest.update((byte) b);
       }
       return b;
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-      int count = super.read(b, off, len);
-      if (count != -1) {
-        digest.update(b, off, count);
+      var count = super.read(b, off, len);
+      if (count == -1) {
+        verify();
       } else {
-        eof = true;
-        verifyChecksum();
+        digest.update(b, off, count);
       }
       return count;
     }
 
-    @Override
-    public void close() throws IOException {
-      try {
-        super.close();
-      } finally {
-        if (eof) {
-          verifyChecksum();
-        }
+    private void verify() {
+      if (verified) {
+        return;
       }
-    }
-
-    private void verifyChecksum() {
-      if (!verified) {
-        verified = true;
-        String computed = HexFormat.of().formatHex(digest.digest());
-        if (!computed.equals(expectedChecksum)) {
-          log.error(FileStoreConstants.LOG_CORRUPT, fileId, bucket);
-          throw new GeneralException(FileStoreExceptionStatus.FILE_STORE_FILE_CORRUPT, fileId);
-        }
+      verified = true;
+      if (!HexFormat.of().formatHex(digest.digest()).equals(expected)) {
+        log.error(FileStoreConstants.LOG_CORRUPT, fileId, bucket);
+        throw new GeneralException(FileStoreExceptionStatus.FILE_STORE_FILE_CORRUPT, fileId);
       }
     }
   }

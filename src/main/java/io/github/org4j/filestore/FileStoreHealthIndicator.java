@@ -1,18 +1,21 @@
 package io.github.org4j.filestore;
 
 import java.util.LinkedHashMap;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@RequiredArgsConstructor
 class FileStoreHealthIndicator implements HealthIndicator {
 
   private final S3Client s3;
   private final FileStoreProperties properties;
+
+  FileStoreHealthIndicator(S3Client s3, FileStoreProperties properties) {
+    this.s3 = s3;
+    this.properties = properties;
+  }
 
   @Override
   public Health health() {

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.util.StringUtils;
@@ -45,8 +46,8 @@ public record FileStoreProperties(
       @NotBlank String endpoint,
       @NotBlank String region,
       @DefaultValue(FileStoreConstants.DEFAULT_CREDENTIALS) Credentials credentials,
-      String accessKey,
-      String secretKey,
+      @Nullable String accessKey,
+      @Nullable String secretKey,
       boolean pathStyle,
       @DefaultValue(FileStoreConstants.DEFAULT_API_CALL_TIMEOUT) Duration apiCallTimeout,
       @DefaultValue(FileStoreConstants.DEFAULT_API_CALL_ATTEMPT_TIMEOUT)

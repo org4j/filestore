@@ -3,8 +3,15 @@ package io.github.org4j.filestore;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -26,6 +33,41 @@ class FileStorePropertiesTest {
     runner
         .withPropertyValues("org4j.filestore.storage.secret-key=local-only")
         .run(context -> assertThat(context).hasSingleBean(FileStore.class));
+  }
+
+  @Test
+  void withTheActuatorTheBucketsHaveAHealthIndicator() {
+    runner
+        .withPropertyValues("org4j.filestore.storage.secret-key=local-only")
+        .run(context -> assertThat(context).hasBean("fileStoreHealthIndicator"));
+  }
+
+  @Test
+  void anAppWithoutTheActuatorStarts() throws Exception {
+    var urls =
+        Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator, -1))
+            .filter(entry -> !entry.contains("spring-boot-health"))
+            .map(FileStorePropertiesTest::url)
+            .toArray(URL[]::new);
+    try (var withoutActuator = new URLClassLoader(urls, ClassLoader.getPlatformClassLoader())) {
+      assertThat(
+              withoutActuator.getResource(
+                  HealthIndicator.class.getName().replace('.', '/') + ".class"))
+          .isNull();
+      var thread = Thread.currentThread();
+      var original = thread.getContextClassLoader();
+      thread.setContextClassLoader(withoutActuator);
+      try {
+        var started =
+            withoutActuator
+                .loadClass(WithoutTheActuator.class.getName())
+                .getMethod("start")
+                .invoke(null);
+        assertThat(started).isEqualTo("fileStore");
+      } finally {
+        thread.setContextClassLoader(original);
+      }
+    }
   }
 
   @Test
@@ -79,5 +121,13 @@ class FileStorePropertiesTest {
                     .rootCause()
                     .hasMessageContaining("org4j.filestore")
                     .hasMessageContaining("region"));
+  }
+
+  private static URL url(String classpathEntry) {
+    try {
+      return Path.of(classpathEntry).toUri().toURL();
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException(classpathEntry, e);
+    }
   }
 }

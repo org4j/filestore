@@ -114,6 +114,15 @@ class FileStoreIT {
   }
 
   @Test
+  void aNameInAnyAlphabetComesBackAsIs() {
+    var pdf = "%PDF-1.4\ntrailer << >>\n%%EOF\n".getBytes(StandardCharsets.US_ASCII);
+    var stored =
+        files.store("partner-documents", file("Устав Oʻzbekiston.pdf", "application/pdf", pdf));
+    assertThat(files.read("partner-documents", stored.id()).file().fileName())
+        .isEqualTo("Устав Oʻzbekiston.pdf");
+  }
+
+  @Test
   void aFileCanBeStreamedAndTransferredWithoutHeapMaterialization() throws Exception {
     var pdf =
         "%PDF-1.4\n1 0 obj << >> endobj\ntrailer << >>\n%%EOF\n"
